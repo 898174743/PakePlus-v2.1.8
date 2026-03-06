@@ -1,11 +1,1409 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        Hello World
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吸血鬼钻石记录报表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7B2CBF',
+                        secondary: '#9D4EDD',
+                        light: '#F3E8FF',
+                        dark: '#5A189A',
+                        extendBtn: '#F59E0B',
+                        vampire: {
+                            blood: '#8B0000',
+                            dark: '#1A0315',
+                            gold: '#D4AF37',
+                            purple: '#4B0082'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '微软雅黑', 'sans-serif'],
+                        vampire: ['"Times New Roman"', 'Georgia', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .tab-active { @apply bg-primary text-white; }
+            .tab-inactive { @apply bg-gray-100 text-gray-700 hover:bg-gray-200; }
+            .table-header { @apply bg-primary text-white font-bold py-2 px-3 text-sm; }
+            .table-cell { @apply border border-gray-300 py-2 px-2 text-center text-sm; }
+            .editable-cell { @apply focus:outline-none focus:ring-2 focus:ring-secondary focus:bg-purple-50; }
+            .btn-primary { @apply bg-primary text-white px-4 py-2 rounded hover:bg-dark transition-colors; }
+            .btn-secondary { @apply bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition-colors; }
+            .btn-danger { @apply bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors; }
+            .serial-tag { @apply bg-purple-100 text-primary text-xs px-2 py-1 rounded-full inline-block m-0.5; }
+            .detail-tag { @apply bg-purple-50 border border-purple-200 text-xs px-2 py-1 rounded text-left w-full mb-1; }
+            .total-card { 
+                @apply absolute top-0 right-4 bg-white rounded-lg shadow-lg p-2 border border-purple-100 z-10 
+                w-48 transform transition-all duration-300 hover:shadow-xl hover:border-primary/30;
+            }
+            .detail-highlight-row { background-color: #E0F7FF; border: 2px solid #00ACC1; }
+            .detail-highlight-cell { background-color: #BBDEFB; border: 1px solid #0288D1; }
+            .ad-float-window { @apply fixed top-4 left-4 bg-red-600 text-white p-4 rounded-lg shadow-xl z-50 border-2 border-yellow-300; }
+            .ad-close-btn { @apply absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 cursor-pointer transition-colors; }
+            .btn-page-toggle { @apply bg-extendBtn text-white px-4 py-2 rounded hover:bg-amber-600 transition-colors flex items-center; }
+            .page-container { @apply transition-all duration-300; }
+            
+            .password-screen { 
+                @apply fixed inset-0 z-[9998] flex items-center justify-center bg-vampire-dark bg-opacity-95 
+                bg-[url('https://picsum.photos/id/237/1920/1080')] bg-cover bg-center bg-blend-multiply;
+            }
+            .password-card {
+                @apply bg-black bg-opacity-80 backdrop-blur-md border-2 border-vampire-gold rounded-xl 
+                p-8 w-full max-w-md shadow-2xl shadow-vampire-blood/50 transform transition-all duration-500
+                hover:scale-[1.02] hover:shadow-vampire-blood/70;
+            }
+            .password-title {
+                @apply text-center mb-6 text-4xl font-vampire font-bold text-vampire-gold 
+                drop-shadow-[0_0_8px_rgba(212,175,55,0.8)];
+            }
+            .password-input {
+                @apply w-full bg-black bg-opacity-70 border-2 border-vampire-gold rounded-lg 
+                py-3 px-4 text-white text-lg mb-4 focus:outline-none focus:ring-2 
+                focus:ring-vampire-blood focus:border-transparent;
+            }
+            .password-btn {
+                @apply px-6 py-3 rounded-lg font-bold transition-all duration-300 
+                hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
+            }
+            .password-btn-cancel {
+                @apply bg-gray-700 text-white hover:bg-gray-600 focus:ring-gray-500;
+            }
+            .password-btn-confirm {
+                @apply bg-vampire-blood text-white hover:bg-red-800 focus:ring-vampire-blood;
+            }
+            .password-message {
+                @apply text-center py-2 px-4 rounded-lg mt-4 transition-all duration-300;
+            }
+            .message-success {
+                @apply bg-green-900 bg-opacity-70 text-green-300 border border-green-500;
+            }
+            .message-error {
+                @apply bg-red-900 bg-opacity-70 text-red-300 border border-red-500;
+            }
+            .password-expire-tip {
+                @apply text-center text-sm text-yellow-300 mb-4 italic;
+            }
+            .welcome-toast {
+                @apply fixed top-4 right-4 bg-primary text-white px-6 py-3 rounded-lg shadow-xl z-[9999] 
+                transform transition-all duration-500 opacity-0 translate-y-8;
+            }
+            
+            .ad-optimized-window {
+                @apply fixed top-4 left-4 bg-gradient-to-br from-red-700 to-black text-white p-5 rounded-lg 
+                shadow-2xl z-[9999] border-2 border-yellow-300 max-w-xs;
+            }
+            .ad-optimized-header {
+                @apply font-bold text-xl mb-2 text-yellow-300 drop-shadow-[0_0_5px_rgba(255,215,0,0.9)];
+            }
+            .ad-optimized-content {
+                @apply font-mono text-sm mb-3 text-white;
+            }
+            .ad-optimized-close {
+                @apply absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full 
+                bg-black/40 hover:bg-black/60 cursor-pointer transition-colors;
+            }
+
+            .assist-container {
+                overflow: hidden;
+                margin-bottom: 16px;
+            }
+            .rmb-total-card {
+                width: 176px !important;
+                height: auto !important;
+                padding: 8px !important;
+                margin-left: 16px !important;
+                position: relative !important;
+                float: right !important;
+                clear: none !important;
+                z-index: 10 !important;
+                box-sizing: border-box !important;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                border: 1px solid #f3e8ff;
+            }
+            .clear-both {
+                clear: both;
+            }
+            
+            /* 新增：全局倒计时样式 */
+            .countdown-badge {
+                @apply fixed top-4 right-4 bg-vampire-dark border-2 border-vampire-gold rounded-lg 
+                p-3 z-[9997] text-white font-vampire shadow-xl;
+            }
+            .countdown-text {
+                @apply text-vampire-gold text-lg font-bold drop-shadow-[0_0_5px_rgba(212,175,55,0.8)];
+            }
+            .countdown-expired {
+                @apply text-red-500 text-lg font-bold drop-shadow-[0_0_5px_rgba(255,0,0,0.8)];
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 新增：全局倒计时显示 -->
+    <div id="countdownBadge" class="countdown-badge hidden">
+        <div class="flex items-center gap-2">
+            <i class="fa fa-clock-o text-vampire-gold text-xl"></i>
+            <div>
+                <div class="text-xs text-gray-300">卡密剩余时间</div>
+                <div id="countdownDisplay" class="countdown-text">30天00:00:00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录成功提示条 -->
+    <div id="welcomeToast" class="welcome-toast">
+        <div class="flex items-center">
+            <i class="fa fa-diamond mr-2 text-vampire-gold"></i>
+            <span id="welcomeMessage">欢迎使用聚鑫科技！卡密剩余 30 天</span>
+        </div>
+    </div>
+
+    <!-- 广告悬浮窗口 -->
+    <div id="adOptimizedWindow" class="ad-optimized-window" style="display: none;">
+        <div id="adOptimizedCloseBtn" class="ad-optimized-close">
+            <i class="fa fa-times text-xl"></i>
+        </div>
+        <div class="ad-optimized-header">聚鑫网游广告位招商</div>
+        <div class="ad-optimized-content">专业游戏数据统计系统定制</div>
+        <div class="ad-optimized-qq">技术QQ：898174743</div>
+        <div class="mt-2 text-xs text-gray-300">关闭后本次浏览不再显示</div>
+    </div>
+
+    <!-- 卡密验证页面（强制显示） -->
+    <div id="passwordScreen" class="password-screen">
+        <div class="password-card">
+            <h2 class="password-title">吸血鬼钻石统计</h2>
+            <div id="passwordExpireTip" class="password-expire-tip">卡密剩余有效期：30天00:00:00</div>
+            <div class="mb-6 flex justify-center">
+                <div class="w-24 h-24 rounded-full bg-vampire-blood bg-opacity-50 flex items-center justify-center border-2 border-vampire-gold">
+                    <i class="fa fa-diamond text-4xl text-vampire-gold"></i>
+                </div>
+            </div>
+            
+            <input type="text" id="passwordInput" class="password-input" placeholder="请输入卡密" autocomplete="off">
+            
+            <div class="flex justify-between gap-4 mb-4">
+                <button id="passwordCancelBtn" class="password-btn password-btn-cancel w-1/2">取消</button>
+                <button id="passwordConfirmBtn" class="password-btn password-btn-confirm w-1/2">确定</button>
+            </div>
+            
+            <div id="passwordMessage" class="password-message" style="display: none;"></div>
+            
+            <div class="text-center text-xs text-gray-400 mt-6">
+                <p>© 2026 吸血鬼钻石统计系统</p>
+                <p class="mt-1">聚鑫网游 版权所有</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl font-bold text-primary">吸血鬼钻石记录报表</h1>
+            <p class="text-gray-600 mt-2">按大区+序号+小区双维度汇总，数据实时同步</p>
+        </header>
+
+        <div class="flex justify-between items-center mb-4">
+            <button id="newSubDirBtn" class="btn-primary flex items-center">
+                <i class="fa fa-plus mr-2"></i> 新建子目录
+            </button>
+            <div class="flex space-x-2">
+                <button id="exportBtn" class="btn-secondary flex items-center">
+                    <i class="fa fa-download mr-2"></i> 导出数据
+                </button>
+                <button id="importBtn" class="btn-secondary flex items-center">
+                    <i class="fa fa-upload mr-2"></i> 导入数据
+                </button>
+                <input type="file" id="importFile" accept=".json" class="hidden">
+            </div>
+        </div>
+
+        <div class="flex overflow-x-auto mb-4 pb-2" id="tabContainer">
+            <button class="tab-active whitespace-nowrap px-4 py-2 rounded-t-lg mr-2 flex items-center" data-tab="main">
+                <i class="fa fa-home mr-2"></i> 母目录 - 大区汇总表
+            </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+            <div id="mainTabContent" class="tab-content">
+                <div class="assist-container">
+                    <div class="mb-4 p-3 bg-purple-50 rounded border border-purple-200 max-w-3xl float-left w-auto">
+                        <h3 class="font-bold text-primary">📌 辅助中心</h3>
+                        <ul class="list-disc pl-5 mt-2 text-sm">
+                            <li>点击对应事件您将跳转到相应地址</li>
+                            <li><a href="http://anjia.lol/register?ref=33431" target="_blank" class="text-blue-600 hover:underline font-medium">最牛逼得IP代理</a></li>
+                            <li>脚本卡密自助购买（网站开发中）</li>
+                            <li>账号卡网搭建上传中</li>
+                        </ul>
+                    </div>
+
+                    <div id="rmbTotalCard" class="rmb-total-card">
+                        <div class="flex items-center justify-between mb-1 pb-1 border-b border-purple-100">
+                            <h3 class="font-bold text-primary flex items-center text-sm">
+                                <i class="fa fa-calculator mr-1 text-secondary"></i> 数据总计
+                            </h3>
+                            <span class="text-xs text-gray-400">实时计算</span>
+                        </div>
+                        <button id="calcTotalBtn" class="bg-blue-600 text-white w-full mb-2 text-xs py-1 rounded hover:bg-blue-700">计算所有区总计</button>
+                        <div class="flex items-center justify-between p-1 bg-purple-50 rounded-lg mb-1">
+                            <span class="text-gray-700 font-medium text-xs">钻石总计：</span>
+                            <span id="diamondTotalValue" class="font-bold text-primary text-base">0</span>
+                        </div>
+                        <div class="flex items-center justify-between p-1 bg-purple-50 rounded-lg">
+                            <span class="text-gray-700 font-medium text-xs">总计金额：</span>
+                            <span id="rmbTotalValue" class="font-bold text-red-600 text-base">¥0.00</span>
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1 text-center">
+                            点击计算按钮更新数据
+                        </div>
+                    </div>
+
+                    <div class="clear-both"></div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="table-header w-1/12">大区</th>
+                                <th class="table-header w-2/12">小区标记</th>
+                                <th class="table-header w-1/12">机型</th>
+                                <th class="table-header w-4/12">对应明细</th>
+                                <th class="table-header w-1/12">钻石合计</th>
+                                <th class="table-header w-1/12">今日比例</th>
+                                <th class="table-header w-1/12">RMB合计</th>
+                                <th class="table-header w-3/12">子目录跳转</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mainTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 明细操作弹窗 -->
+        <div id="detailModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+            <div style="background: white; border-radius: 8px; padding: 24px; width: 100%; max-width: 400px;">
+                <h3 style="font-size: 18px; font-weight: bold; margin: 0 0 16px 0; color: #7B2CBF;">操作明细记录</h3>
+                <p id="modalRecordText" style="margin: 0 0 24px 0; color: #4B5563; font-size: 14px;">【安卓】1号/1-1区/（100）</p>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button id="modalCancel" style="background: #E5E7EB; color: #4B5563; padding: 8px 16px; border-radius: 6px; cursor: pointer; border: none;">取消</button>
+                    <button id="modalQuery" style="background: #7B2CBF; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; border: none;">查询</button>
+                    <button id="modalDelete" style="background: #EF4444; color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; border: none;">删除</button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-6 text-center text-gray-500 text-sm">
+            <p id="statusMessage">数据已自动保存</p>
+            <p class="mt-1">最后更新: <span id="lastUpdateTime">-</span></p>
+        </footer>
+
+        <div id="newSubDirModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4">新建子目录</h3>
+                <div class="mb-4">
+                    <label for="subDirName" class="block text-gray-700 mb-2">子目录名称</label>
+                    <input type="text" id="subDirName" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="例如: 子目录 1">
+                </div>
+                <div class="mb-4">
+                    <label for="subDirDevice" class="block text-gray-700 mb-2">默认机型</label>
+                    <input type="text" id="subDirDevice" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="例如: 安卓/苹果/模拟器" value="安卓">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelNewSubDir" class="btn-secondary">取消</button>
+                    <button id="confirmNewSubDir" class="btn-primary">确定</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="confirmModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4" id="confirmTitle">操作确认</h3>
+                <p class="mb-4" id="confirmMessage"></p>
+                <div class="flex justify-end space-x-3">
+                    <button id="confirmCancel" class="btn-secondary">取消</button>
+                    <button id="confirmOk" class="btn-primary">确定</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="saveNotification" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg translate-y-16 opacity-0 transition-all duration-300 z-50">
+            <div class="flex items-center">
+                <i class="fa fa-check-circle mr-2"></i>
+                <span>数据已保存</span>
+            </div>
+        </div>
+    </div>
+
+<script>
+// 配置项 - 优化卡密存储结构
+const STORAGE_KEYS = {
+    PASSWORD_MAP: 'vampire_password_map',       // 卡密信息映射 { "卡密": { activationTime: 时间戳, isExpired: false } }
+    CURRENT_PASSWORD: 'vampire_current_password', // 当前使用的卡密
+    AD_CLOSED: 'vampire_ad_closed',
+    DATA: 'vampireDiamondRecord'
+};
+const PASSWORD_VALID_SECONDS = 30 * 24 * 60 * 60; // 30天换算成秒
+
+// 大区 + 小区 配置
+const AREA_CONFIG = {
+    "1区": ["4-3", "6-3", "2-1", "7-3"],
+    "2区": ["1-1", "11-1", "4-1", "5-1"],
+    "3区": ["1-3", "16-3", "3-3", "16-1"],
+    "4区": ["5-3", "7-1", "11-2", "13-3"],
+    "5区": ["1-2", "12-1", "12-3", "15-1"],
+    "6区": ["3-2", "11-3", "13-1", "15-3"],
+    "7区": ["6-2", "13-3", "4-2", "16-2"],
+    "8区": ["2-3", "3-1", "7-2", "12-2"],
+    "9区": ["2-2", "15-2", "5-2", "6-1"],
+    "主播1": ["8-2", "8-3", "8-1", "9-1"],
+    "主播2": ["10-3", "14-2", "14-3", "10-2"],
+    "主播3": ["9-2", "10-1", "9-3", "14-1"],
+};
+
+const ALL_AREAS = Object.keys(AREA_CONFIG);
+let subDirectories = [];
+let currentSubDirId = null;
+let modalType = '';
+let targetSubDirId = '';
+let areaTodayRate = {};
+let selectedDetail = {
+    element: null,
+    subDirId: '',
+    serial: 0,
+    serverIdx: 0,
+    text: '',
+    key: ''
+};
+let subDirPageState = {};
+let isAdClosedThisSession = false;
+let countdownInterval = null; // 倒计时定时器
+
+// ====================== 卡密核心功能（修复版）======================
+// 初始化卡密映射表
+function initPasswordMap() {
+    const passwordMap = localStorage.getItem(STORAGE_KEYS.PASSWORD_MAP);
+    if (!passwordMap) {
+        localStorage.setItem(STORAGE_KEYS.PASSWORD_MAP, JSON.stringify({}));
+        return {};
+    }
+    return JSON.parse(passwordMap);
+}
+
+// 保存卡密信息（修复：首次激活正确记录时间）
+function savePasswordInfo(password) {
+    const passwordMap = initPasswordMap();
+    
+    // 首次激活，记录激活时间（精确到毫秒）
+    if (!passwordMap[password]) {
+        passwordMap[password] = {
+            activationTime: Date.now(),
+            isExpired: false
+        };
+    }
+    
+    localStorage.setItem(STORAGE_KEYS.PASSWORD_MAP, JSON.stringify(passwordMap));
+    localStorage.setItem(STORAGE_KEYS.CURRENT_PASSWORD, password);
+}
+
+// 检查卡密是否有效（修复：新卡密首次使用不判为过期）
+function isPasswordValid(password) {
+    if (!password) return false;
+    
+    const passwordMap = initPasswordMap();
+    const passwordInfo = passwordMap[password];
+    
+    // 新卡密（首次使用）直接有效
+    if (!passwordInfo) return true;
+    
+    // 已标记过期
+    if (passwordInfo.isExpired) return false;
+    
+    // 计算剩余时间（秒）
+    const now = Date.now();
+    const elapsedSeconds = Math.floor((now - passwordInfo.activationTime) / 1000);
+    const remainingSeconds = PASSWORD_VALID_SECONDS - elapsedSeconds;
+    
+    // 已过期，标记并保存
+    if (remainingSeconds <= 0) {
+        passwordInfo.isExpired = true;
+        localStorage.setItem(STORAGE_KEYS.PASSWORD_MAP, JSON.stringify(passwordMap));
+        return false;
+    }
+    
+    return true;
+}
+
+// 获取卡密剩余时间（返回秒数）
+function getPasswordRemainingSeconds(password) {
+    if (!password) return 0;
+    
+    const passwordMap = initPasswordMap();
+    const passwordInfo = passwordMap[password];
+    
+    // 新卡密默认30天
+    if (!passwordInfo || passwordInfo.isExpired) {
+        return passwordInfo && passwordInfo.isExpired ? 0 : PASSWORD_VALID_SECONDS;
+    }
+    
+    const now = Date.now();
+    const elapsedSeconds = Math.floor((now - passwordInfo.activationTime) / 1000);
+    const remainingSeconds = PASSWORD_VALID_SECONDS - elapsedSeconds;
+    
+    return Math.max(0, remainingSeconds);
+}
+
+// 格式化秒数为 天:时:分:秒
+function formatSecondsToDHMS(seconds) {
+    const days = Math.floor(seconds / (24 * 60 * 60));
+    const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+    const minutes = Math.floor((seconds % (60 * 60)) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    return `${days}天${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+// 更新全局倒计时显示
+function updateCountdownDisplay() {
+    const currentPassword = localStorage.getItem(STORAGE_KEYS.CURRENT_PASSWORD);
+    const remainingSeconds = getPasswordRemainingSeconds(currentPassword);
+    const countdownDisplay = document.getElementById('countdownDisplay');
+    const countdownBadge = document.getElementById('countdownBadge');
+    
+    if (remainingSeconds <= 0) {
+        countdownDisplay.textContent = "已过期";
+        countdownDisplay.className = "countdown-expired";
+        // 过期后强制回到验证页
+        forcePasswordScreen();
+    } else {
+        countdownDisplay.textContent = formatSecondsToDHMS(remainingSeconds);
+        countdownDisplay.className = "countdown-text";
+        countdownBadge.classList.remove('hidden');
+    }
+}
+
+// 启动倒计时定时器
+function startCountdownTimer() {
+    // 清除已有定时器
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    // 立即更新一次
+    updateCountdownDisplay();
+    
+    // 每秒更新
+    countdownInterval = setInterval(updateCountdownDisplay, 1000);
+}
+
+// 强制显示卡密验证页
+function forcePasswordScreen() {
+    document.getElementById('passwordScreen').style.display = 'flex';
+    document.getElementById('countdownBadge').classList.add('hidden');
+    
+    // 清除倒计时定时器
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+}
+
+// 验证卡密格式
+function validatePasswordFormat(password) {
+    const passwordRegex = /^jx.{6}xe$/;
+    return passwordRegex.test(password);
+}
+
+// 绑定卡密验证事件
+function bindPasswordEvents() {
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordConfirmBtn = document.getElementById('passwordConfirmBtn');
+    const passwordCancelBtn = document.getElementById('passwordCancelBtn');
+    const passwordMessage = document.getElementById('passwordMessage');
+    const passwordExpireTip = document.getElementById('passwordExpireTip');
+    
+    // 填充已保存的卡密
+    const savedPassword = localStorage.getItem(STORAGE_KEYS.CURRENT_PASSWORD);
+    if (savedPassword) {
+        passwordInput.value = savedPassword;
+        // 显示剩余时间
+        const remainingSeconds = getPasswordRemainingSeconds(savedPassword);
+        passwordExpireTip.textContent = `卡密剩余有效期：${formatSecondsToDHMS(remainingSeconds)}`;
+    }
+    
+    passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            validatePassword();
+        }
+    });
+    
+    passwordConfirmBtn.addEventListener('click', validatePassword);
+    passwordCancelBtn.addEventListener('click', () => {
+        passwordInput.value = '';
+        passwordMessage.style.display = 'none';
+    });
+    
+    function validatePassword() {
+        const inputPassword = passwordInput.value.trim();
+        
+        // 1. 空值校验
+        if (!inputPassword) {
+            showPasswordMessage('请输入卡密', 'error');
+            return;
+        }
+        
+        // 2. 格式校验
+        if (!validatePasswordFormat(inputPassword)) {
+            showPasswordMessage('卡密格式错误！请输入jx开头的10位卡密', 'error');
+            passwordInput.select();
+            return;
+        }
+        
+        // 3. 有效性校验
+        if (!isPasswordValid(inputPassword)) {
+            showPasswordMessage('卡密已过期，无法使用', 'error');
+            return;
+        }
+        
+        // 4. 保存卡密信息（首次激活会记录时间）
+        savePasswordInfo(inputPassword);
+        
+        // 5. 显示剩余时间
+        const remainingSeconds = getPasswordRemainingSeconds(inputPassword);
+        const remainingDHMS = formatSecondsToDHMS(remainingSeconds);
+        passwordExpireTip.textContent = `卡密剩余有效期：${remainingDHMS}`;
+        
+        // 6. 验证成功
+        showPasswordMessage('卡密验证成功，正在进入系统...', 'success');
+        
+        setTimeout(() => {
+            document.getElementById('passwordScreen').style.display = 'none';
+            // 启动倒计时
+            startCountdownTimer();
+            // 初始化应用
+            initApplication();
+            // 显示欢迎提示
+            showWelcomeToast(remainingDHMS);
+        }, 1500);
+    }
+    
+    function showPasswordMessage(message, type) {
+        passwordMessage.textContent = message;
+        passwordMessage.style.display = 'block';
+        passwordMessage.className = `password-message ${type === 'success' ? 'message-success' : 'message-error'}`;
+        
+        if (type === 'error') {
+            setTimeout(() => {
+                passwordMessage.style.display = 'none';
+            }, 3000);
+        }
+    }
+}
+
+// 显示欢迎提示
+function showWelcomeToast(remainingDHMS) {
+    const toast = document.getElementById('welcomeToast');
+    const message = document.getElementById('welcomeMessage');
+    message.textContent = `欢迎使用聚鑫科技！卡密剩余 ${remainingDHMS}`;
+    
+    // 显示动画
+    toast.classList.remove('translate-y-8', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+    
+    // 5秒后隐藏
+    setTimeout(() => {
+        toast.classList.add('translate-y-8', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+    }, 5000);
+}
+
+// ====================== 页面初始化 ======================
+document.addEventListener('DOMContentLoaded', () => {
+    initOptimizedAdWindow();
+    // 绑定卡密事件
+    bindPasswordEvents();
+    // 绑定计算按钮事件
+    document.getElementById('calcTotalBtn').addEventListener('click', calculateTotalRMB);
+    
+    // 检查已有卡密是否有效（修复：不强制拦截，交给验证流程）
+    const savedPassword = localStorage.getItem(STORAGE_KEYS.CURRENT_PASSWORD);
+    if (savedPassword && isPasswordValid(savedPassword)) {
+        // 有效卡密，自动进入系统
+        document.getElementById('passwordScreen').style.display = 'none';
+        startCountdownTimer();
+        initApplication();
+        const remainingDHMS = formatSecondsToDHMS(getPasswordRemainingSeconds(savedPassword));
+        showWelcomeToast(remainingDHMS);
+    } else {
+        // 无卡密/卡密过期，显示验证页
+        forcePasswordScreen();
+    }
+});
+
+// ====================== 原有功能保留（仅调整部分逻辑） ======================
+// 初始化广告弹窗
+function initOptimizedAdWindow() {
+    const adWindow = document.getElementById('adOptimizedWindow');
+    const adCloseBtn = document.getElementById('adOptimizedCloseBtn');
+    
+    adWindow.style.display = 'block';
+    
+    adCloseBtn.addEventListener('click', function() {
+        adWindow.style.display = 'none';
+        isAdClosedThisSession = true;
+    });
+}
+
+// 初始化应用
+function initApplication() {
+    loadData();
+    renderMainTab();
+    renderSubDirTabs();
+    setupEventListeners();
+    updateLastUpdateTime();
+    bindDetailModalEvents();
+}
+
+// 计算所有大区的钻石和RMB总计
+function calculateTotalRMB() {
+    let totalDiamonds = 0;
+    let totalRMB = 0;
+
+    ALL_AREAS.forEach(area => {
+        let areaDiamonds = 0;
+        subDirectories.forEach(subDir => {
+            subDir.data.forEach(item => {
+                [1,2,3,4,5,6].forEach(idx => {
+                    const s = item[`server${idx}`]?.trim();
+                    const d = item[`diamond${idx}`] || 0;
+                    if (s && AREA_CONFIG[area].includes(s)) areaDiamonds += parseInt(d);
+                });
+            });
+        });
+        
+        totalDiamonds += areaDiamonds;
+        const rate = areaTodayRate[area] || 0;
+        totalRMB += (areaDiamonds / 1000) * rate;
+    });
+
+    document.getElementById('diamondTotalValue').textContent = totalDiamonds;
+    document.getElementById('rmbTotalValue').textContent = '¥' + totalRMB.toFixed(2);
+}
+
+// 加载数据
+function loadData() {
+    const saved = localStorage.getItem(STORAGE_KEYS.DATA);
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            subDirectories = data.subDirectories || [];
+            areaTodayRate = data.areaTodayRate || {};
+            subDirPageState = data.subDirPageState || {};
+        } catch (e) {
+            subDirectories = [];
+            areaTodayRate = {};
+            subDirPageState = {};
+        }
+    }
+    if (subDirectories.length === 0) {
+        createDefaultSubDir();
+    }
+}
+
+// 创建默认子目录
+function createDefaultSubDir() {
+    const defaultData = Array.from({length:20}, (_, i) => ({
+        id: i + 1,
+        server1: '', diamond1: 0,
+        server2: '', diamond2: 0,
+        server3: '', diamond3: 0,
+        server4: '', diamond4: 0,
+        server5: '', diamond5: 0,
+        server6: '', diamond6: 0,
+        device: ''
+    }));
+    subDirectories.push({
+        id: 'sub1',
+        name: '子目录 1',
+        data: defaultData,
+        device: '安卓'
+    });
+    subDirPageState['sub1'] = 1;
+    saveData();
+}
+
+// 保存数据
+function saveData() {
+    const data = { 
+        subDirectories, 
+        areaTodayRate,
+        subDirPageState,
+        lastUpdated: new Date().toISOString() 
+    };
+    localStorage.setItem(STORAGE_KEYS.DATA, JSON.stringify(data));
+    updateLastUpdateTime();
+    showSaveTip();
+}
+
+// 更新最后更新时间
+function updateLastUpdateTime() {
+    const saved = localStorage.getItem(STORAGE_KEYS.DATA);
+    if (saved) {
+        const data = JSON.parse(saved);
+        if (data.lastUpdated) {
+            document.getElementById('lastUpdateTime').textContent = new Date(data.lastUpdated).toLocaleString('zh-CN');
+        }
+    }
+}
+
+// 显示保存提示
+function showSaveTip() {
+    const tip = document.getElementById('saveNotification');
+    tip.classList.remove('translate-y-16', 'opacity-0');
+    setTimeout(() => tip.classList.add('translate-y-16', 'opacity-0'), 2000);
+}
+
+// 获取大区对应的机型
+function getAreaDevices(area) {
+    const devices = new Set();
+    subDirectories.forEach(subDir => {
+        let hasAreaData = false;
+        subDir.data.forEach(item => {
+            [1,2,3,4,5,6].forEach(idx => {
+                const server = item[`server${idx}`]?.trim();
+                if (server && AREA_CONFIG[area].includes(server)) hasAreaData = true;
+            });
+        });
+        if (hasAreaData && subDir.device) devices.add(subDir.device);
+    });
+    return Array.from(devices).join('、') || '无';
+}
+
+// 渲染母目录表格
+function renderMainTab() {
+    const tbody = document.getElementById('mainTableBody');
+    tbody.innerHTML = '';
+    ALL_AREAS.forEach(area => {
+        const row = document.createElement('tr');
+        const areaCell = document.createElement('td');
+        areaCell.className = 'table-cell font-bold';
+        areaCell.textContent = area;
+
+        const subAreaCell = document.createElement('td');
+        subAreaCell.className = 'table-cell text-left px-3';
+        subAreaCell.textContent = AREA_CONFIG[area].join('、');
+
+        const deviceCell = document.createElement('td');
+        deviceCell.className = 'table-cell font-medium';
+        deviceCell.textContent = getAreaDevices(area);
+
+        const detailCell = document.createElement('td');
+        detailCell.className = 'table-cell text-left px-2';
+        const detailContainer = document.createElement('div');
+        detailContainer.className = 'flex flex-wrap gap-1';
+
+        subDirectories.forEach(subDir => {
+            subDir.data.forEach(item => {
+                [1,2,3,4,5,6].forEach(idx => {
+                    const server = item[`server${idx}`]?.trim();
+                    const diamond = item[`diamond${idx}`] || 0;
+                    const device = subDir.device || '未知';
+                    if (server && AREA_CONFIG[area].includes(server) && diamond > 0) {
+                        const detailKey = `${subDir.id}_${item.id}_${idx}_${server}_${diamond}`;
+                        const detailTag = document.createElement('span');
+                        detailTag.className = 'detail-tag';
+                        detailTag.dataset.key = detailKey;
+                        detailTag.innerHTML = `
+                            <a href="#" class="hover:underline text-primary font-medium" 
+                               onclick="showDetailModal(this, '${subDir.id}', ${item.id}, ${idx}, '${detailKey}'); return false;">
+                                【${device}】${item.id}号/${server}区/（${diamond}）
+                            </a>`;
+                        detailContainer.appendChild(detailTag);
+                    }
+                });
+            });
+        });
+        if (detailContainer.children.length === 0) {
+            detailContainer.textContent = '无';
+            detailContainer.className = 'text-gray-500';
+        }
+        detailCell.appendChild(detailContainer);
+
+        const diamondCell = document.createElement('td');
+        diamondCell.className = 'table-cell font-mono font-bold text-primary';
+        let total = 0;
+        subDirectories.forEach(subDir => {
+            subDir.data.forEach(item => {
+                [1,2,3,4,5,6].forEach(idx => {
+                    const s = item[`server${idx}`]?.trim();
+                    const d = item[`diamond${idx}`] || 0;
+                    if (s && AREA_CONFIG[area].includes(s)) total += parseInt(d);
+                });
+            });
+        });
+        diamondCell.textContent = total;
+
+        const rateCell = document.createElement('td');
+        rateCell.className = 'table-cell';
+        const rateInput = document.createElement('input');
+        rateInput.type = 'number';
+        rateInput.min = '0';
+        rateInput.step = '0.01';
+        rateInput.className = 'w-full border border-gray-300 rounded px-2 py-1 text-center';
+        rateInput.value = areaTodayRate[area] || '';
+        rateInput.addEventListener('blur', function() {
+            const rate = parseFloat(this.value) || 0;
+            areaTodayRate[area] = rate;
+            saveData();
+            renderMainTab();
+        });
+        rateCell.appendChild(rateInput);
+
+        const rmbCell = document.createElement('td');
+        rmbCell.className = 'table-cell font-mono font-bold text-red-600';
+        const rate = areaTodayRate[area] || 0;
+        const rmbTotal = (total / 1000) * rate;
+        rmbCell.textContent = rmbTotal.toFixed(2);
+        rmbCell.dataset.rmbValue = rmbTotal.toFixed(2);
+
+        const linkCell = document.createElement('td');
+        linkCell.className = 'table-cell';
+        const linkContainer = document.createElement('div');
+        linkContainer.className = 'flex flex-wrap justify-center gap-1';
+        subDirectories.forEach((subDir, i) => {
+            const a = document.createElement('a');
+            a.href='#';
+            a.className='text-primary hover:underline text-sm';
+            a.textContent = `子${i+1}(${subDir.device||'?'})`;
+            a.onclick = e=>{e.preventDefault(); switchToSubDir(subDir.id);};
+            linkContainer.appendChild(a);
+        });
+        linkCell.appendChild(linkContainer);
+
+        row.append(areaCell, subAreaCell, deviceCell, detailCell, diamondCell, rateCell, rmbCell, linkCell);
+        tbody.appendChild(row);
+    });
+}
+
+// 跳转到子目录指定序号位置
+function jumpToSubDirSerial(subDirId, serial, serverIdx) {
+    switchToTab(subDirId);
+    setTimeout(()=>{
+        let targetPage = 1;
+        if (serverIdx >=4 && serverIdx <=6) {
+            targetPage = 2;
+            switchSubDirPage(subDirId, 2);
+        }
+        
+        const tableId = targetPage === 1 ? `${subDirId}TableBody` : `${subDirId}TableBodyPage2`;
+        const tb = document.getElementById(tableId);
+        
+        if(tb) {
+            const tr = tb.querySelectorAll('tr')[serial-1];
+            if(tr){
+                tr.scrollIntoView({behavior:'smooth',block:'center'});
+                tr.classList.add('detail-highlight-row');
+                
+                const cellIndex = targetPage === 1 ? 1+(serverIdx-1)*2 : 1+((serverIdx-4)*2);
+                const td = tr.querySelectorAll('td')[cellIndex];
+                
+                if(td) td.classList.add('detail-highlight-cell');
+                setTimeout(()=>{
+                    tr.classList.remove('detail-highlight-row');
+                    if(td) td.classList.remove('detail-highlight-cell');
+                },5000);
+            }
+        }
+    },100);
+    return false;
+}
+
+// 渲染子目录标签
+function renderSubDirTabs() {
+    const tabContainer = document.getElementById('tabContainer');
+    tabContainer.querySelectorAll('[data-tab^="sub"]').forEach(t=>t.remove());
+    subDirectories.forEach(subDir=>{
+        const tab = document.createElement('button');
+        tab.className = 'tab-inactive whitespace-nowrap px-4 py-2 rounded-t-lg mr-2 flex items-center';
+        tab.dataset.tab = subDir.id;
+        tab.innerHTML = `
+            <span>${subDir.name}(${subDir.device||'?'})</span>
+            <div class="ml-2 flex items-center space-x-1">
+                <button class="text-xs p-1 hover:bg-gray-200" data-action="rename" data-id="${subDir.id}"><i class="fa fa-pencil"></i></button>
+                <button class="text-xs p-1 hover:bg-gray-200" data-action="delete" data-id="${subDir.id}"><i class="fa fa-trash"></i></button>
+            </div>`;
+        tab.onclick = ()=>{
+            switchToTab(subDir.id);
+        };
+        tabContainer.appendChild(tab);
+    });
+    renderSubDirContent();
+}
+
+// 渲染子目录内容
+function renderSubDirContent() {
+    document.querySelectorAll('.tab-content:not(#mainTabContent)').forEach(c=>c.remove());
+    
+    subDirectories.forEach(subDir=>{
+        if (subDirPageState[subDir.id] === undefined) {
+            subDirPageState[subDir.id] = 1;
+        }
+        const currentPage = subDirPageState[subDir.id];
+        
+        const c = document.createElement('div');
+        c.id = `${subDir.id}Content`;
+        c.className = 'tab-content hidden';
+        
+        c.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-primary">${subDir.name} <span class="text-sm text-gray-500">(${subDir.device||'?'})</span></h3>
+                <div class="flex space-x-2">
+                    <button id="pageToggleBtn_${subDir.id}" class="btn-page-toggle">
+                        <i class="fa fa-${currentPage === 1 ? 'chevron-right' : 'chevron-left'} mr-1"></i>
+                        ${currentPage === 1 ? '显示列表' : '隐藏列表'}
+                    </button>
+                    <button class="btn-secondary" onclick="switchToTab('main')"><i class="fa fa-arrow-left mr-1"></i>返回母目录</button>
+                </div>
+            </div>
+            
+            <div id="${subDir.id}Page1" class="page-container ${currentPage === 1 ? '' : 'hidden'}">
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="table-header">序号</th>
+                                <th class="table-header">区服1</th><th class="table-header">钻石1</th>
+                                <th class="table-header">区服2</th><th class="table-header">钻石2</th>
+                                <th class="table-header">区服3</th><th class="table-header">钻石3</th>
+                            </tr>
+                        </thead>
+                        <tbody id="${subDir.id}TableBody"></tbody>
+                    </table>
+                </div>
+                <div class="p-3 bg-light rounded border border-purple-200 mb-4">
+                    <label class="font-bold block mb-2">机型记录</label>
+                    <input type="text" id="${subDir.id}Device" value="${subDir.device||''}" class="w-full border px-3 py-2 rounded" placeholder="安卓/苹果/模拟器">
+                </div>
+            </div>
+            
+            <div id="${subDir.id}Page2" class="page-container ${currentPage === 2 ? '' : 'hidden'}">
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="table-header">序号</th>
+                                <th class="table-header">区服4</th><th class="table-header">钻石4</th>
+                                <th class="table-header">区服5</th><th class="table-header">钻石5</th>
+                                <th class="table-header">区服6</th><th class="table-header">钻石6</th>
+                            </tr>
+                        </thead>
+                        <tbody id="${subDir.id}TableBodyPage2"></tbody>
+                    </table>
+                </div>
+                <div class="p-3 bg-light rounded border border-purple-200 mb-4">
+                    <label class="font-bold block mb-2">机型记录</label>
+                    <input type="text" id="${subDir.id}DevicePage2" value="${subDir.device||''}" class="w-full border px-3 py-2 rounded" placeholder="安卓/苹果/模拟器">
+                </div>
+            </div>
+        `;
+        
+        document.querySelector('.bg-white.rounded-lg.shadow.p-4').appendChild(c);
+        
+        renderSubDirTablePage1(subDir.id);
+        renderSubDirTablePage2(subDir.id);
+        
+        document.getElementById(`${subDir.id}Device`).addEventListener('blur',function(){
+            const i = subDirectories.findIndex(d=>d.id===subDir.id);
+            subDirectories[i].device = this.value.trim();
+            document.getElementById(`${subDir.id}DevicePage2`).value = this.value.trim();
+            saveData(); renderMainTab(); renderSubDirTabs();
+        });
+        
+        document.getElementById(`${subDir.id}DevicePage2`).addEventListener('blur',function(){
+            const i = subDirectories.findIndex(d=>d.id===subDir.id);
+            subDirectories[i].device = this.value.trim();
+            document.getElementById(`${subDir.id}Device`).value = this.value.trim();
+            saveData(); renderMainTab(); renderSubDirTabs();
+        });
+        
+        document.getElementById(`pageToggleBtn_${subDir.id}`).addEventListener('click', function() {
+            const targetPage = subDirPageState[subDir.id] === 1 ? 2 : 1;
+            switchSubDirPage(subDir.id, targetPage);
+        });
+    });
+}
+
+// 渲染第一页表格
+function renderSubDirTablePage1(subDirId) {
+    const subDir = subDirectories.find(d=>d.id===subDirId);
+    const tb = document.getElementById(`${subDirId}TableBody`);
+    tb.innerHTML = '';
+    
+    subDir.data.forEach(item=>{
+        const tr = document.createElement('tr');
+        const idCell = document.createElement('td');
+        idCell.className = 'table-cell font-bold';
+        idCell.textContent = item.id;
+        
+        const s1 = createEditableCell(item.server1, v=>updateSubDirData(subDirId,item.id,'server1',v));
+        const d1 = createEditableCell(item.diamond1||'', v=>updateSubDirData(subDirId,item.id,'diamond1',validateNumber(v)),true);
+        const s2 = createEditableCell(item.server2, v=>updateSubDirData(subDirId,item.id,'server2',v));
+        const d2 = createEditableCell(item.diamond2||'', v=>updateSubDirData(subDirId,item.id,'diamond2',validateNumber(v)),true);
+        const s3 = createEditableCell(item.server3, v=>updateSubDirData(subDirId,item.id,'server3',v));
+        const d3 = createEditableCell(item.diamond3||'', v=>updateSubDirData(subDirId,item.id,'diamond3',validateNumber(v)),true);
+        
+        tr.append(idCell, s1, d1, s2, d2, s3, d3);
+        tb.appendChild(tr);
+    });
+}
+
+// 渲染第二页表格
+function renderSubDirTablePage2(subDirId) {
+    const subDir = subDirectories.find(d=>d.id===subDirId);
+    const tb = document.getElementById(`${subDirId}TableBodyPage2`);
+    tb.innerHTML = '';
+    
+    subDir.data.forEach(item=>{
+        const tr = document.createElement('tr');
+        const idCell = document.createElement('td');
+        idCell.className = 'table-cell font-bold';
+        idCell.textContent = item.id;
+        
+        const s4 = createEditableCell(item.server4 || '', v=>updateSubDirData(subDirId,item.id,'server4',v));
+        const d4 = createEditableCell(item.diamond4 || '', v=>updateSubDirData(subDirId,item.id,'diamond4',validateNumber(v)),true);
+        const s5 = createEditableCell(item.server5 || '', v=>updateSubDirData(subDirId,item.id,'server5',v));
+        const d5 = createEditableCell(item.diamond5 || '', v=>updateSubDirData(subDirId,item.id,'diamond5',validateNumber(v)),true);
+        const s6 = createEditableCell(item.server6 || '', v=>updateSubDirData(subDirId,item.id,'server6',v));
+        const d6 = createEditableCell(item.diamond6 || '', v=>updateSubDirData(subDirId,item.id,'diamond6',validateNumber(v)),true);
+        
+        tr.append(idCell, s4, d4, s5, d5, s6, d6);
+        tb.appendChild(tr);
+    });
+}
+
+// 创建可编辑单元格
+function createEditableCell(val,onChange,isNum=false){
+    const td = document.createElement('td');
+    td.className = 'table-cell';
+    const div = document.createElement('div');
+    div.className = 'editable-cell w-full';
+    div.contentEditable = true;
+    div.textContent = val;
+    div.addEventListener('blur',()=>{
+        const v = div.textContent.trim();
+        onChange(isNum ? (v===''?0:parseInt(v)) : v);
+    });
+    if(isNum){
+        div.addEventListener('keydown',e=>{
+            const ok = ['0','1','2','3','4','5','6','7','8','9','Delete','Backspace','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
+            if(!ok.includes(e.key) && !e.ctrlKey && !e.metaKey) e.preventDefault();
+        });
+        div.addEventListener('keydown',e=>{
+            if((e.ctrlKey||e.metaKey)&&e.key==='a'){e.preventDefault();document.execCommand('selectAll');}
+        });
+    }
+    td.appendChild(div);
+    return td;
+}
+
+// 验证数字
+function validateNumber(v){
+    if(v===''||v==null||v===undefined) return 0;
+    const n = parseInt(v);
+    return isNaN(n)?0:n;
+}
+
+// 更新子目录数据
+function updateSubDirData(subDirId,itemId,field,val){
+    const i = subDirectories.findIndex(d=>d.id===subDirId);
+    const j = subDirectories[i].data.findIndex(x=>x.id===itemId);
+    subDirectories[i].data[j][field] = val;
+    clearTimeout(window.saveTimer);
+    window.saveTimer = setTimeout(()=>{
+        saveData();
+        if(document.querySelector('.tab-active').dataset.tab==='main') renderMainTab();
+    },300);
+}
+
+// 切换子目录分页
+function switchSubDirPage(subDirId, targetPage) {
+    subDirPageState[subDirId] = targetPage;
+    
+    const page1 = document.getElementById(`${subDirId}Page1`);
+    const page2 = document.getElementById(`${subDirId}Page2`);
+    const btn = document.getElementById(`pageToggleBtn_${subDirId}`);
+    
+    if (targetPage === 1) {
+        page1.classList.remove('hidden');
+        page2.classList.add('hidden');
+        btn.innerHTML = `<i class="fa fa-chevron-right mr-1"></i>显示列表`;
+    } else {
+        page1.classList.add('hidden');
+        page2.classList.remove('hidden');
+        btn.innerHTML = `<i class="fa fa-chevron-left mr-1"></i>隐藏列表`;
+    }
+    
+    saveData();
+}
+
+// 切换标签
+function switchToTab(tabId){
+    document.querySelectorAll('[data-tab]').forEach(t=>{
+        if(t.dataset.tab===tabId) t.classList.replace('tab-inactive','tab-active');
+        else t.classList.replace('tab-active','tab-inactive');
+    });
+    document.querySelectorAll('.tab-content').forEach(x=>x.classList.add('hidden'));
+    if(tabId==='main'){
+        document.getElementById('mainTabContent').classList.remove('hidden');
+        renderMainTab();
+    }else{
+        document.getElementById(`${tabId}Content`).classList.remove('hidden');
+    }
+    currentSubDirId = tabId!=='main'?tabId:null;
+}
+
+// 切换到子目录
+function switchToSubDir(subDirId){
+    switchToTab(subDirId);
+    const currentPage = subDirPageState[subDirId] || 1;
+    const tableId = currentPage === 1 ? `${subDirId}TableBody` : `${subDirId}TableBodyPage2`;
+    setTimeout(()=>document.getElementById(tableId).scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+// 创建子目录
+function createSubDir(name,device){
+    const id = 'sub'+Date.now();
+    const data = Array.from({length:20},(_,i)=>({
+        id:i+1,
+        server1:'',diamond1:0,
+        server2:'',diamond2:0,
+        server3:'',diamond3:0,
+        server4:'',diamond4:0,
+        server5:'',diamond5:0,
+        server6:'',diamond6:0,
+        device:''
+    }));
+    subDirectories.push({id,name,data,device:device.trim()});
+    subDirPageState[id] = 1;
+    saveData(); renderSubDirTabs(); switchToTab(id);
+}
+
+// 重命名子目录
+function renameSubDir(id,newName){
+    const i = subDirectories.findIndex(x=>x.id===id);
+    subDirectories[i].name = newName;
+    saveData(); renderSubDirTabs();
+}
+
+// 删除子目录
+function deleteSubDir(id){
+    subDirectories = subDirectories.filter(x=>x.id!==id);
+    delete subDirPageState[id];
+    saveData();
+    if(currentSubDirId===id) switchToTab('main');
+    renderSubDirTabs(); renderMainTab();
+}
+
+// 导出数据
+function exportData(){
+    const exportData = {
+        subDirectories,
+        areaTodayRate,
+        subDirPageState,
+        AREA_CONFIG,
+        exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `吸血鬼钻石记录_${new Date().toLocaleDateString()}.json`;
+    a.click();
+}
+
+// 导入数据
+function importData(file){
+    const r = new FileReader();
+    r.onload = e=>{
+        try{
+            const d = JSON.parse(e.target.result);
+            if(d.subDirectories&&Array.isArray(d.subDirectories)){
+                subDirectories = d.subDirectories;
+                areaTodayRate = d.areaTodayRate || {};
+                subDirPageState = d.subDirPageState || {};
+                saveData(); renderMainTab(); renderSubDirTabs();
+                showStatus('导入成功','success');
+            }else showStatus('格式错误','error');
+        }catch(e){showStatus('导入失败','error');}
+    };
+    r.readAsText(file);
+}
+
+// 显示状态提示
+function showStatus(msg,type){
+    const el = document.getElementById('statusMessage');
+    el.textContent = msg;
+    el.className = `font-medium ${type==='success'?'text-green-600':'text-red-600'}`;
+    setTimeout(()=>{el.textContent='数据已自动保存';el.className=''},3000);
+}
+
+// 设置事件监听
+function setupEventListeners(){
+    document.getElementById('newSubDirBtn').onclick=()=>{
+        document.getElementById('subDirName').value = `子目录 ${subDirectories.length+1}`;
+        document.getElementById('subDirDevice').value='安卓';
+        document.getElementById('newSubDirModal').classList.remove('hidden');
+    };
+    document.getElementById('cancelNewSubDir').onclick=()=>document.getElementById('newSubDirModal').classList.add('hidden');
+    document.getElementById('confirmNewSubDir').onclick=()=>{
+        const name = document.getElementById('subDirName').value.trim();
+        const device = document.getElementById('subDirDevice').value.trim();
+        if(!name){showStatus('请输入名称','error');return;}
+        createSubDir(name,device);
+        document.getElementById('newSubDirModal').classList.add('hidden');
+    };
+    document.getElementById('tabContainer').addEventListener('click',e=>{
+        const t = e.target.closest('[data-action]');
+        if(!t) return;
+        e.stopPropagation();
+        modalType = t.dataset.action;
+        targetSubDirId = t.dataset.id;
+        const sub = subDirectories.find(x=>x.id===targetSubDirId);
+        const m = document.getElementById('confirmModal');
+        const title = document.getElementById('confirmTitle');
+        const msg = document.getElementById('confirmMessage');
+        if(modalType==='rename'){
+            title.textContent='重命名子目录';
+            msg.innerHTML = `为「${sub.name}」输入新名称：<br><input id="newNameInput" class="w-full border rounded px-3 py-2 mt-2" value="${sub.name}">`;
+        }else if(modalType==='delete'){
+            title.textContent='删除子目录';
+            msg.textContent = `确定删除「${sub.name}」吗？不可恢复！`;
+        }
+        m.classList.remove('hidden');
+    });
+    document.getElementById('confirmCancel').onclick=()=>document.getElementById('confirmModal').classList.add('hidden');
+    document.getElementById('confirmOk').onclick=()=>{
+        if(modalType==='rename'){
+            const nn = document.getElementById('newNameInput').value.trim();
+            if(!nn){showStatus('名称不能为空','error');return;}
+            renameSubDir(targetSubDirId,nn);
+        }else if(modalType==='delete') deleteSubDir(targetSubDirId);
+        document.getElementById('confirmModal').classList.add('hidden');
+    };
+    document.getElementById('exportBtn').onclick=exportData;
+    document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
+    document.getElementById('importFile').addEventListener('change',e=>{
+        if(e.target.files[0]){importData(e.target.files[0]);e.target.value='';}
+    });
+    ['newSubDirModal','confirmModal'].forEach(id=>{
+        document.getElementById(id).addEventListener('click',e=>{
+            if(e.target===document.getElementById(id)) document.getElementById(id).classList.add('hidden');
+        });
+    });
+    document.addEventListener('keydown',e=>{
+        if(e.key==='Escape'){
+            document.getElementById('newSubDirModal').classList.add('hidden');
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+    });
+}
+
+// 显示明细弹窗
+function showDetailModal(element, subDirId, serial, serverIdx, detailKey) {
+    selectedDetail = {
+        element: element.closest('.detail-tag'),
+        subDirId: subDirId,
+        serial: serial,
+        serverIdx: serverIdx,
+        text: element.textContent.trim(),
+        key: detailKey
+    };
+    document.getElementById('modalRecordText').textContent = selectedDetail.text;
+    document.getElementById('detailModal').style.display = 'flex';
+}
+
+// 删除明细记录
+function deleteDetailRecord() {
+    if (selectedDetail.element && selectedDetail.subDirId && selectedDetail.serial && selectedDetail.serverIdx) {
+        const subDirIndex = subDirectories.findIndex(d => d.id === selectedDetail.subDirId);
+        const itemIndex = subDirectories[subDirIndex].data.findIndex(x => x.id === selectedDetail.serial);
+        
+        if (subDirIndex !== -1 && itemIndex !== -1) {
+            subDirectories[subDirIndex].data[itemIndex][`server${selectedDetail.serverIdx}`] = '';
+            subDirectories[subDirIndex].data[itemIndex][`diamond${selectedDetail.serverIdx}`] = 0;
+            
+            saveData();
+            
+            if (currentSubDirId === selectedDetail.subDirId) {
+                if (selectedDetail.serverIdx <= 3) {
+                    renderSubDirTablePage1(selectedDetail.subDirId);
+                } else if (selectedDetail.serverIdx >=4 && selectedDetail.serverIdx <=6) {
+                    renderSubDirTablePage2(selectedDetail.subDirId);
+                }
+            }
+        }
+
+        selectedDetail.element.remove();
+        document.getElementById('detailModal').style.display = 'none';
+        renderMainTab();
+        
+        showStatus(`已删除明细：${selectedDetail.text}（子目录对应数据已清空）`, 'success');
+        
+        selectedDetail = {
+            element: null,
+            subDirId: '',
+            serial: 0,
+            serverIdx: 0,
+            text: '',
+            key: ''
+        };
+    }
+}
+
+// 绑定明细弹窗事件
+function bindDetailModalEvents() {
+    document.getElementById('modalCancel').addEventListener('click', function() {
+        document.getElementById('detailModal').style.display = 'none';
+    });
+
+    document.getElementById('modalQuery').addEventListener('click', function() {
+        document.getElementById('detailModal').style.display = 'none';
+        jumpToSubDirSerial(selectedDetail.subDirId, selectedDetail.serial, selectedDetail.serverIdx);
+    });
+
+    document.getElementById('modalDelete').addEventListener('click', deleteDetailRecord);
+
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+    }, true);
+}
+
+// 页面卸载时清除定时器
+window.addEventListener('beforeunload', function() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+});
+</script>
+</body>
 </html>
