@@ -1,11 +1,659 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        Hello World
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吸血鬼砖石统计卡密生成器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        /* 主标题样式 */
+        .main-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #8b0000; /* 暗红色调贴合吸血鬼主题 */
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        /* 登录注册面板 */
+        .auth-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .auth-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #6c757d;
+            border-bottom: 2px solid transparent;
+        }
+        .auth-tab.active {
+            color: #8b0000;
+            border-bottom: 2px solid #8b0000;
+        }
+        .auth-form {
+            display: none;
+        }
+        .auth-form.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        /* 卡密生成区域 */
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none; /* 默认隐藏，登录后显示 */
+        }
+        .card-code {
+            font-size: 24px;
+            font-weight: bold;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin: 20px 0;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        #generateBtn {
+            background-color: #007bff;
+            color: white;
+        }
+        #copyBtn {
+            background-color: #28a745;
+            color: white;
+        }
+        .auth-btn {
+            background-color: #8b0000;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .logout-btn {
+            background-color: #dc3545;
+            color: white;
+            margin-bottom: 15px;
+        }
+        .tip {
+            margin-top: 15px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        /* 卡密库样式 */
+        .card-library {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none; /* 默认隐藏，登录后显示 */
+        }
+        .search-box {
+            margin-bottom: 20px;
+        }
+        #searchInput {
+            width: 70%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        #searchBtn {
+            background-color: #17a2b8;
+            color: white;
+        }
+        #clearSearchBtn {
+            background-color: #6c757d;
+            color: white;
+        }
+        .card-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .card-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-item:last-child {
+            border-bottom: none;
+        }
+        .card-info {
+            flex: 1;
+        }
+        .card-code-text {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .card-time {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .expired {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- 主标题 -->
+    <h1 class="main-title">吸血鬼砖石统计卡密生成器</h1>
+
+    <!-- 登录注册面板 -->
+    <div class="auth-panel" id="authPanel">
+        <div class="auth-tabs">
+            <div class="auth-tab active" data-tab="login">登录</div>
+            <div class="auth-tab" data-tab="register">注册</div>
+        </div>
+
+        <!-- 登录表单 -->
+        <div class="auth-form active" id="loginForm">
+            <div class="form-group">
+                <label for="loginUsername">账号</label>
+                <input type="text" id="loginUsername" placeholder="请输入8-12位账号">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">密码</label>
+                <input type="password" id="loginPassword" placeholder="请输入6-12位密码">
+            </div>
+            <button class="auth-btn" id="loginBtn">登录</button>
+            <div class="tip" id="loginTip"></div>
+        </div>
+
+        <!-- 注册表单 -->
+        <div class="auth-form" id="registerForm">
+            <div class="form-group">
+                <label for="regUsername">账号</label>
+                <input type="text" id="regUsername" placeholder="请设置8-12位账号">
+            </div>
+            <div class="form-group">
+                <label for="regPassword">密码</label>
+                <input type="password" id="regPassword" placeholder="请设置6-12位密码">
+            </div>
+            <div class="form-group">
+                <label for="agentCode">代理码</label>
+                <input type="text" id="agentCode" placeholder="必须填写正确代理码才能注册">
+            </div>
+            <button class="auth-btn" id="registerBtn">注册</button>
+            <div class="tip" id="registerTip"></div>
+        </div>
+    </div>
+
+    <!-- 卡密生成区域 -->
+    <div class="container" id="cardGenerator">
+        <button class="logout-btn" id="logoutBtn">退出登录</button>
+        <h2>卡密生成器 (jx开头 | xe结尾 | 10位)</h2>
+        <div class="card-code" id="cardCodeDisplay">点击生成卡密</div>
+        <button id="generateBtn">生成卡密</button>
+        <button id="copyBtn">复制卡密</button>
+        <div class="tip" id="tipText"></div>
+    </div>
+
+    <!-- 卡密库区域 -->
+    <div class="card-library" id="cardLibrary">
+        <h2>卡密库</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="输入关键字搜索卡密（支持模糊匹配）">
+            <button id="searchBtn">搜索</button>
+            <button id="clearSearchBtn">清空搜索</button>
+        </div>
+        <div class="card-list" id="cardList">
+            <div class="no-data">暂无生成的卡密</div>
+        </div>
+    </div>
+
+    <script>
+        // 常量定义
+        const AGENT_CODE = 'jx6765'; // 固定代理码
+        const STORAGE_KEY_USERS = 'cardGeneratorUsers'; // 用户数据存储键
+        const STORAGE_KEY_LOGIN_USER = 'currentLoginUser'; // 当前登录用户键
+        const STORAGE_KEY_CARD_LIBRARY = 'cardLibrary_'; // 卡密库存储前缀（拼接用户名）
+
+        // 初始化用户数据
+        let users = JSON.parse(localStorage.getItem(STORAGE_KEY_USERS)) || {};
+        // 当前登录用户
+        let currentUser = localStorage.getItem(STORAGE_KEY_LOGIN_USER) || null;
+        // 卡密库（按用户隔离）
+        let cardLibrary = [];
+
+        // DOM元素获取
+        // 登录注册相关
+        const authTabs = document.querySelectorAll('.auth-tab');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const loginUsername = document.getElementById('loginUsername');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginTip = document.getElementById('loginTip');
+        const regUsername = document.getElementById('regUsername');
+        const regPassword = document.getElementById('regPassword');
+        const agentCode = document.getElementById('agentCode');
+        const registerBtn = document.getElementById('registerBtn');
+        const registerTip = document.getElementById('registerTip');
+        const authPanel = document.getElementById('authPanel');
+        // 卡密生成相关
+        const cardGenerator = document.getElementById('cardGenerator');
+        const cardLibraryPanel = document.getElementById('cardLibrary');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const cardCodeDisplay = document.getElementById('cardCodeDisplay');
+        const generateBtn = document.getElementById('generateBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const tipText = document.getElementById('tipText');
+        // 卡密库搜索相关
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const cardList = document.getElementById('cardList');
+
+        // 字符库：大小写字母 + 数字
+        const charPool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+        // ====================== 登录注册逻辑 ======================
+        /**
+         * 切换登录/注册标签
+         */
+        authTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // 切换标签样式
+                authTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // 切换表单显示
+                const tabName = tab.dataset.tab;
+                if (tabName === 'login') {
+                    loginForm.classList.add('active');
+                    registerForm.classList.remove('active');
+                } else {
+                    loginForm.classList.remove('active');
+                    registerForm.classList.add('active');
+                }
+                // 清空提示
+                loginTip.textContent = '';
+                registerTip.textContent = '';
+            });
+        });
+
+        /**
+         * 注册验证
+         * @returns {object} {isValid: boolean, message: string}
+         */
+        function validateRegister() {
+            const username = regUsername.value.trim();
+            const password = regPassword.value.trim();
+            const inputAgentCode = agentCode.value.trim();
+
+            // 账号验证
+            if (!username) return { isValid: false, message: '账号不能为空！' };
+            if (username.length < 8 || username.length > 12) {
+                return { isValid: false, message: '账号必须为8-12位！' };
+            }
+            // 密码验证
+            if (!password) return { isValid: false, message: '密码不能为空！' };
+            if (password.length < 6 || password.length > 12) {
+                return { isValid: false, message: '密码必须为6-12位！' };
+            }
+            // 代理码验证
+            if (inputAgentCode !== AGENT_CODE) {
+                return { isValid: false, message: '代理码错误！' };
+            }
+            // 账号是否已存在
+            if (users[username]) {
+                return { isValid: false, message: '该账号已存在！' };
+            }
+
+            return { isValid: true, message: '验证通过' };
+        }
+
+        /**
+         * 注册账号
+         */
+        registerBtn.addEventListener('click', () => {
+            const validateResult = validateRegister();
+            if (!validateResult.isValid) {
+                registerTip.textContent = validateResult.message;
+                registerTip.className = 'tip error';
+                return;
+            }
+
+            // 保存用户信息
+            const username = regUsername.value.trim();
+            const password = regPassword.value.trim();
+            users[username] = { password };
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+
+            // 提示并切换到登录
+            registerTip.textContent = '注册成功！请登录';
+            registerTip.className = 'tip success';
+            // 清空表单
+            regUsername.value = '';
+            regPassword.value = '';
+            agentCode.value = '';
+            // 切换到登录标签
+            authTabs[0].click();
+        });
+
+        /**
+         * 登录验证
+         * @returns {object} {isValid: boolean, message: string}
+         */
+        function validateLogin() {
+            const username = loginUsername.value.trim();
+            const password = loginPassword.value.trim();
+
+            if (!username) return { isValid: false, message: '账号不能为空！' };
+            if (!password) return { isValid: false, message: '密码不能为空！' };
+            if (!users[username]) return { isValid: false, message: '账号不存在！' };
+            if (users[username].password !== password) {
+                return { isValid: false, message: '密码错误！' };
+            }
+
+            return { isValid: true, message: '登录成功' };
+        }
+
+        /**
+         * 登录账号
+         */
+        loginBtn.addEventListener('click', () => {
+            const validateResult = validateLogin();
+            if (!validateResult.isValid) {
+                loginTip.textContent = validateResult.message;
+                loginTip.className = 'tip error';
+                return;
+            }
+
+            // 保存当前登录用户
+            const username = loginUsername.value.trim();
+            currentUser = username;
+            localStorage.setItem(STORAGE_KEY_LOGIN_USER, currentUser);
+            
+            // 加载该用户的卡密库
+            loadCardLibrary();
+
+            // 显示卡密生成和卡密库，隐藏登录面板
+            authPanel.style.display = 'none';
+            cardGenerator.style.display = 'block';
+            cardLibraryPanel.style.display = 'block';
+            
+            // 清空提示和表单
+            loginTip.textContent = '';
+            loginUsername.value = '';
+            loginPassword.value = '';
+            
+            // 初始化卡密列表
+            renderCardList();
+        });
+
+        /**
+         * 退出登录
+         */
+        logoutBtn.addEventListener('click', () => {
+            // 清除登录状态
+            currentUser = null;
+            localStorage.removeItem(STORAGE_KEY_LOGIN_USER);
+            
+            // 隐藏卡密区域，显示登录面板
+            cardGenerator.style.display = 'none';
+            cardLibraryPanel.style.display = 'none';
+            authPanel.style.display = 'block';
+            
+            // 清空卡密库
+            cardLibrary = [];
+        });
+
+        // ====================== 卡密生成逻辑 ======================
+        /**
+         * 加载当前用户的卡密库
+         */
+        function loadCardLibrary() {
+            if (!currentUser) return;
+            const key = STORAGE_KEY_CARD_LIBRARY + currentUser;
+            cardLibrary = JSON.parse(localStorage.getItem(key)) || [];
+        }
+
+        /**
+         * 保存当前用户的卡密库
+         */
+        function saveCardLibrary() {
+            if (!currentUser) return;
+            const key = STORAGE_KEY_CARD_LIBRARY + currentUser;
+            localStorage.setItem(key, JSON.stringify(cardLibrary));
+        }
+
+        /**
+         * 格式化日期为 YYYY-MM-DD HH:mm:ss
+         * @param {Date} date 日期对象
+         * @returns {string} 格式化后的日期字符串
+         */
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hour = String(date.getHours()).padStart(2, '0');
+            const minute = String(date.getMinutes()).padStart(2, '0');
+            const second = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+        }
+
+        /**
+         * 生成随机字符（补全中间6位）
+         * @returns {string} 6位随机字符
+         */
+        function generateRandomChars() {
+            let randomStr = '';
+            for (let i = 0; i < 6; i++) {
+                const randomIndex = Math.floor(Math.random() * charPool.length);
+                randomStr += charPool[randomIndex];
+            }
+            return randomStr;
+        }
+
+        /**
+         * 生成唯一卡密（包含生成时间、到期时间）
+         * @returns {object} 卡密详细信息
+         */
+        function generateUniqueCardCode() {
+            let cardCode = '';
+            // 循环生成直到得到不重复的卡密
+            do {
+                const middleChars = generateRandomChars();
+                cardCode = `jx${middleChars}xe`; // jx开头 + 6位随机 + xe结尾 = 10位
+            } while (cardLibrary.some(item => item.code === cardCode));
+            
+            // 生成时间（当前时间）
+            const generateTime = new Date();
+            // 到期时间（30天后）
+            const expireTime = new Date();
+            expireTime.setDate(generateTime.getDate() + 30);
+
+            // 卡密详细信息
+            const cardInfo = {
+                code: cardCode,
+                generateTime: generateTime.getTime(), // 存储时间戳便于计算
+                expireTime: expireTime.getTime()
+            };
+
+            // 将新卡密加入库并保存
+            cardLibrary.unshift(cardInfo); // 新增的卡密放在最前面
+            saveCardLibrary();
+            
+            return cardInfo;
+        }
+
+        /**
+         * 复制卡密到剪贴板
+         * @param {string} code 要复制的卡密
+         */
+        function copyCardCode(code) {
+            if (!code || code === '点击生成卡密') {
+                tipText.textContent = '请先生成卡密再复制！';
+                tipText.className = 'tip error';
+                return;
+            }
+            
+            navigator.clipboard.writeText(code)
+                .then(() => {
+                    tipText.textContent = '卡密已成功复制到剪贴板！';
+                    tipText.className = 'tip success';
+                })
+                .catch(err => {
+                    tipText.textContent = '复制失败：' + err.message;
+                    tipText.className = 'tip error';
+                });
+        }
+
+        /**
+         * 渲染卡密列表
+         * @param {array} list 要渲染的卡密列表（默认全部）
+         */
+        function renderCardList(list = cardLibrary) {
+            if (list.length === 0) {
+                cardList.innerHTML = '<div class="no-data">暂无匹配的卡密</div>';
+                return;
+            }
+
+            let html = '';
+            list.forEach(item => {
+                const generateDate = formatDate(new Date(item.generateTime));
+                const expireDate = formatDate(new Date(item.expireTime));
+                const isExpired = new Date().getTime() > item.expireTime;
+                const expiredClass = isExpired ? 'expired' : '';
+                const expiredText = isExpired ? '（已过期）' : '（未过期）';
+
+                html += `
+                    <div class="card-item">
+                        <div class="card-info">
+                            <div class="card-code-text ${expiredClass}">${item.code} ${expiredText}</div>
+                            <div class="card-time">
+                                生成时间：${generateDate}<br>
+                                到期时间：${expireDate}（生成后30天）
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            cardList.innerHTML = html;
+        }
+
+        /**
+         * 搜索卡密（模糊匹配）
+         */
+        function searchCardCode() {
+            const keyword = searchInput.value.trim().toLowerCase();
+            if (!keyword) {
+                renderCardList(cardLibrary);
+                return;
+            }
+            // 模糊匹配卡密内容
+            const filteredList = cardLibrary.filter(item => 
+                item.code.toLowerCase().includes(keyword)
+            );
+            renderCardList(filteredList);
+        }
+
+        // ====================== 事件绑定 ======================
+        // 生成卡密按钮
+        generateBtn.addEventListener('click', () => {
+            const newCardInfo = generateUniqueCardCode();
+            cardCodeDisplay.textContent = newCardInfo.code;
+            tipText.textContent = ''; // 清空提示
+            renderCardList(); // 重新渲染卡密库
+        });
+
+        // 复制卡密按钮
+        copyBtn.addEventListener('click', () => {
+            copyCardCode(cardCodeDisplay.textContent);
+        });
+
+        // 搜索按钮
+        searchBtn.addEventListener('click', searchCardCode);
+        // 回车搜索
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') searchCardCode();
+        });
+
+        // 清空搜索按钮
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            renderCardList(cardLibrary);
+        });
+
+        // ====================== 页面初始化 ======================
+        /**
+         * 检查登录状态，初始化页面
+         */
+        function initPage() {
+            if (currentUser) {
+                // 已登录，加载卡密库并显示功能区
+                loadCardLibrary();
+                authPanel.style.display = 'none';
+                cardGenerator.style.display = 'block';
+                cardLibraryPanel.style.display = 'block';
+                renderCardList();
+            } else {
+                // 未登录，显示登录面板
+                authPanel.style.display = 'block';
+                cardGenerator.style.display = 'none';
+                cardLibraryPanel.style.display = 'none';
+            }
+        }
+
+        // 初始化页面
+        initPage();
+    </script>
+</body>
 </html>
